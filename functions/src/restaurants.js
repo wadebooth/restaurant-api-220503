@@ -102,7 +102,33 @@ export function updateRestaurantRating(req, res) {
     return;
   }
   const { newRating } = req.body.rating;
+  const db = connectDb();
   //get the restaurant (hitting firestore)
-  // do maths (doing JS)
-  //save restaurant (hitting firestore)
+  db.collection("restaurants")
+    .doc(restaurantId)
+    .get()
+    .then((doc) => {
+      const { ratingList } = doc.data();
+      // do maths (doing JS)
+      const newRatingList = ratingList
+        ? [...ratingList, newRating]
+        : [newRating];
+      const rating =
+        newRatingList.reduce((accum, elem) => accum + elem, 0) / numRatings;
+      const updatedData = { ratingList: newRatingList, numRatings, rating };
+      //save restaurant (hitting firestore)
+      db.collection("restaurants")
+        .doc(restaurantId)
+        .update(updatedData)
+        .then(() => getRestaurantById(req, res));
+    })
+
+    //option 1:
+    //return the updated restaurant
+
+    //options 2:
+    //return success true/false
+    .catch((err) => {
+      res.status(500).send(err);
+    });
 }
